@@ -4,32 +4,35 @@
 check_default_levels["vdp_backups"] = "vdp_backups_default_levels"
 
 factory_settings["vdp_backups_default_levels"] = {
-  "vdpBackupElapsedTime" : (1500, 2000)
+  #"vdpBackupElapsedTime" : (1500, 2000)
+  "vdpBackupElapsedTime" : (3600, 14400)
 }
 
 def inventory_vdp_backups(info):
+  inventory = []
   for line in info:
-    host = "%s %s" % (line[0],line[8])
-    yield host, None
+    host = "%s" % (line[0])
+    #print host
+    inventory.append((host, None))
+  return inventory
+  #return []
 
-def check_vdp_backups(item, params, info):
-
-  # Get warn/crit values
-  vdpBackupparams = params.get("vdpBackupElapsedTime")
-  if vdpBackupparams == None:
-    vdpBackupwarn, vdpBackupcrit = None, None
-  else:
-    vdpBackupwarn, vdpBackupcrit = vdpBackupparams
-
+#def check_vdp_backups(item, params, info):
+def check_vdp_backups(_no_item, _no_params, info):
   for line in info:
-    desc = "%s %s" % (line[0],line[8])
-    if desc == item:
-      perfdata = [ ( "vdpBackupElapsedTime", line[9] ) ]
+    desc = "%s" % (line[0])
+    if desc == _no_item:
       if line[6] == "Activity completed successfully.":
-        return (0, "%s, elapsed time is %s" % (line[6], line[9]), perfdata)
+        return (0, "%s, elapsed time is %s.  Start Date: %s.  End Date: %s " % (line[6], line[9], line[1], line[2]))
+      elif line[6] == "Activity completed with exceptions.":
+        return (1, "%s, elapsed time is %s.  Start Date: %s.  End Date: %s " % (line[6], line[9], line[1], line[2]))
       else:
-        return (2, "State is %s (!!)" % line[6], perfdata)
+        return (2, "%s, elapsed time is %s.  Start Date: %s. End date: %s " % (line[6], line[9], line[1], line[2]))
+  return (3, "UNKNOWN")
 
-  return (3, "UNKNOWN - item not found in snmp data")
-
-check_info['vdp_backups'] = (check_vdp_backups, "VDP Backup %s", 1, inventory_vdp_backups)
+#
+check_info["vdp_backups"] = {
+        'check_function':       check_vdp_backups,
+        'inventory_function':   inventory_vdp_backups,
+        'service_description':  'VDP Backup %s',
+}
